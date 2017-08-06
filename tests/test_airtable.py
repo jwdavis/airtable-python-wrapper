@@ -3,9 +3,11 @@ from __future__ import absolute_import
 import pytest
 import requests
 import uuid
+import json
 
 from airtable import Airtable
-from airtable.auth import AirtableAuth
+from airtable._auth import AirtableAuth
+from airtable.models import Record, Records
 
 TEST_BASE_KEY = 'appJMY16gZDQrMWpA'
 TEST_TABLE_A = 'TABLE READ'
@@ -142,8 +144,44 @@ class TestAirtableUpdate():
         record = airtable_read.get_records(maxRecords=1, view='ViewAll')[0]
         assert record['fields']['COLUMN_UPDATE'] == 'A'
 
-def populate_table_a(self, airtable_write):
+
+class TestModelRecords():
+
+    @pytest.fixture
+    def json_data(self):
+        return {
+                "id": "recwPQIfs4wKPyc9D",
+                "fields": {
+                            "COLUMN_ID": "1",
+                            "COLUMN_STR": "UNIQUE",
+                            "COLUMN_UPDATE": "A"
+                          },
+                "createdTime": "2017-03-14T22:04:31.000Z"
+                }
+
+    @pytest.fixture
+    def json_str(self):
+        return json.dumps(self.json_data())
+
+    @pytest.fixture
+    def record_data(self):
+        return {
+                "COLUMN_ID": "1",
+                "COLUMN_STR": "UNIQUE",
+                "COLUMN_UPDATE": "A"
+                }
+
+    def test_record_model(self, record_data):
+        record = Record(record_data)
+        assert record['COLUMN_ID'] == '1'
+
+    def test_record_decode(self, json_str):
+        record = Record.decode(json_str)
+        assert record['fields']['COLUMN_ID'] == '1'
+
+
+def populate_table_a(self, airtable_read):
+    """ Only Used for initial testing on new Table """
     for i in range(4, 300):
         row = {'COLUMN_ID': str(i)}
-        resp = airtable_write.insert(row)
-        assert resp.ok
+        resp = airtable_read.insert(row)

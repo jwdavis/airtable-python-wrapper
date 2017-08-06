@@ -8,14 +8,10 @@ import json
 import requests
 import posixpath
 import time
+from six.moves.urllib.parse import urlencode
 
-from .auth import AirtableAuth
-
-try:
-    from urllib.parse import urlencode
-    from configparser import ConfigParser
-except ImportError:
-     from urllib import urlencode
+from ._auth import AirtableAuth
+from .models import Record, Records
 
 
 class Airtable():
@@ -85,9 +81,9 @@ class Airtable():
             response_data = response.json()
             records.extend(response_data.get('records', []))
             offset = response_data.get('offset')
-            if not response.ok or 'offset' not in response_data:
+            if 'offset' not in response_data:
                 break
-        return records
+        return Records(records)
 
     def get_match(self, field_name, field_value, **options):
         """
@@ -107,7 +103,7 @@ class Airtable():
         """
         for record in self.get_records(**options):
             if record.get('fields', {}).get(field_name) == field_value:
-                return record
+                return Record(record)
 
     def get_search(self, field_name, field_value, **options):
         """
@@ -129,7 +125,7 @@ class Airtable():
         for record in self.get_records(**options):
             if record.get('fields', {}).get(field_name) == field_value:
                 records.append(record)
-        return records
+        return Records(records)
 
     def insert(self, fields):
         """
