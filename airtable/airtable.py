@@ -92,18 +92,16 @@ similar to this:
 
 import sys
 import requests
-from collections import OrderedDict
 import posixpath
 import time
+
+from collections import OrderedDict
 from six.moves.urllib.parse import unquote, quote
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 from .auth import AirtableAuth
 from .params import AirtableParams
-
-try:
-    IS_IPY = sys.implementation.name == "ironpython"
-except AttributeError:
-    IS_IPY = False
 
 
 class Airtable(object):
@@ -120,6 +118,12 @@ class Airtable(object):
         """
         session = requests.Session()
         session.auth = AirtableAuth(api_key=api_key)
+        retries = Retry(
+            total=5,
+            backoff_factor=0.1,
+            status_forcelist=[ 408, 429, 500, 502, 503, 504 ]
+        )
+        s.mount('https://', HTTPAdapter(max_retries=retries))
         self.session = session
         self.table_name = table_name
         url_safe_table_name = quote(table_name, safe="")
@@ -145,7 +149,7 @@ class Airtable(object):
             # Reports Decoded 422 Url for better troubleshooting
             # Disabled in IronPython Bug:
             # https://github.com/IronLanguages/ironpython2/issues/242
-            if not IS_IPY and response.status_code == 422:
+            if response.status_code == 422:
                 err_msg = err_msg.replace(response.url, unquote(response.url))
                 err_msg += " (Decoded URL)"
 
