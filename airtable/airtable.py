@@ -123,7 +123,7 @@ class Airtable(object):
             backoff_factor=0.1,
             status_forcelist=[ 408, 429, 500, 502, 503, 504 ]
         )
-        s.mount('https://', HTTPAdapter(max_retries=retries))
+        session.mount('https://', HTTPAdapter(max_retries=retries))
         self.session = session
         self.table_name = table_name
         url_safe_table_name = quote(table_name, safe="")
